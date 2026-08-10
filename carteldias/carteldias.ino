@@ -1,20 +1,24 @@
-
 #include <Wire.h>
+
+//TODO: Se deberia de hacer compatible con una memoria eeprom externa en caso de algun corte de luz o apagado
+
 const int a0 = 2, b0 = 3, c0 = 4, d0 = 5, e0 = 6, f0 = 7, g0 = 8;        //DIGITO UNIDAD
 const int h1 = 9, b1 = 10, c1 = 11, d1 = 12, e1 = 13, f1 = A1, g1 = A0;  //DIGITO DECENA
 
+//NOTE: millis mide el tiempo en milisegundos, entonces un dia es 1000*60*60*24
 #define dia 86400000
 
+//NOTE: esto es la hora al momento de prender el arduino
 #define horainicio 10
+
 unsigned long tiempoInicio;
-unsigned long intervalo = dia;  //86 400 000 son los segundos que hay en el dia
+unsigned long intervalo = dia;
 String stringcuenta;
 char charcuenta[3];
 byte chardecena, charunidad;
-
-
 int cuenta = 60;
 unsigned long tiemporestante = 0;
+
 void setup() {
   Serial.begin(9600);
   tiempoInicio = millis();
@@ -34,6 +38,8 @@ void setup() {
   pinMode(f1, OUTPUT);
   pinMode(g1, OUTPUT);
   pinMode(A2, INPUT_PULLUP);  //BOTON
+  //
+  //NOTE: extraer digitos desde un int
   stringcuenta = String(cuenta);
   stringcuenta.toCharArray(charcuenta, 3);
   chardecena = charcuenta[0] - '0';
@@ -42,12 +48,12 @@ void setup() {
   decena8();  //para que muestre en el digito decena el numero 8, una vez activado
   unidad8();  //para que muestre en el digito unidad el numero 8, una vez activado
   delay(800);
-  unidad6();
-  decena6();
+  unidad();
+  decena();
   Serial.println("termina setup");
   Serial.println(millis());
-  // tiempoInicio += (86400000 / 24 * 5);
   Serial.println(tiempoInicio);
+  //NOTE: el primer intervalo debe estar desfasado asi cambia el dia a las 12
   intervalo = (dia / 24 * (24 - horainicio));
 }
 
@@ -61,6 +67,7 @@ void loop() {
     intervalo = dia;
     tiempoInicio = millis();
     cuenta = cuenta - 1;
+    //NOTE: logica del cartel
     if (cuenta > 9) {
       stringcuenta = String(cuenta);
       stringcuenta.toCharArray(charcuenta, 3);
@@ -88,6 +95,7 @@ void loop() {
       delay(500);
     }
   }
+  //NOTE: esto es en caso de overflow, pues millis() hace overflow (vuelve a 0) a los ~49 dias desde que empieza a andar
   if (millis() <= 499) {
     tiempoInicio = millis();
     intervalo = tiemporestante;
@@ -97,10 +105,7 @@ void loop() {
   }
 }
 
-
-
-
-
+//NOTE: ACA TERMINA EL CODIGO BASE, LO DEMAS ES EL SWITCHING PARA MOSTRAR EL NUMERO DE DECENA Y UNIDAD
 
 void decena() {
   switch (chardecena) {
