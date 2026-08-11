@@ -9,14 +9,14 @@ const int h1 = 9, b1 = 10, c1 = 11, d1 = 12, e1 = 13, f1 = A1, g1 = A0;  //DIGIT
 #define dia 86400000
 
 //NOTE: esto es la hora al momento de prender el arduino
-#define horainicio 10
+#define horainicio 13
 
 unsigned long tiempoInicio;
 unsigned long intervalo = dia;
 String stringcuenta;
 char charcuenta[3];
 byte chardecena, charunidad;
-int cuenta = 60;
+int cuenta = 59;
 unsigned long tiemporestante = 0;
 
 void setup() {
