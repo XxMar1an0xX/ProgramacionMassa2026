@@ -1,6 +1,6 @@
 #include <Wire.h>
 
-//TODO: Se deberia de hacer compatible con una memoria eeprom externa en caso de algun corte de luz o apagado
+//TODO: Es mejor hacer un UPS exclusivo para el arduino asi no se apague aun si se corta la luz
 
 const int a0 = 2, b0 = 3, c0 = 4, d0 = 5, e0 = 6, f0 = 7, g0 = 8;        //DIGITO UNIDAD
 const int h1 = 9, b1 = 10, c1 = 11, d1 = 12, e1 = 13, f1 = A1, g1 = A0;  //DIGITO DECENA
@@ -9,14 +9,14 @@ const int h1 = 9, b1 = 10, c1 = 11, d1 = 12, e1 = 13, f1 = A1, g1 = A0;  //DIGIT
 #define dia 86400000
 
 //NOTE: esto es la hora al momento de prender el arduino
-#define horainicio 13
+#define horainicio 7
 
 unsigned long tiempoInicio;
 unsigned long intervalo = dia;
 String stringcuenta;
 char charcuenta[3];
 byte chardecena, charunidad;
-int cuenta = 59;
+int cuenta = 52;
 unsigned long tiemporestante = 0;
 
 void setup() {
