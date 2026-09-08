@@ -1,4 +1,6 @@
 #include <LittleFS.h>
+//NOTE: este sirve mas para variables concretas en vez de archivos
+// #include <Preferences.h>
 
 
 String texto;
