@@ -19,6 +19,22 @@ struct Tiempos {
   bool estado_led;
 };
 
+
+void prender_progresivo() {
+  for (int brillo = 0; brillo < 255; brillo += 4) {
+    analogWrite(LED_PIN, brillo);
+    // delayMicroseconds(1);
+  }
+}
+
+void apagar_progresivo() {
+  for (int brillo = 255; brillo > 0; brillo -= 4) {
+    analogWrite(LED_PIN, brillo);
+    // delayMicroseconds(1);
+  }
+}
+
+
 class ButtonCallback : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic *characteristic) override {
     estado_boton = characteristic->getValue();
@@ -27,7 +43,7 @@ class ButtonCallback : public BLECharacteristicCallbacks {
       if (estado_boton[0] == 1) {
         Serial.println("ON");
       } else {
-        digitalWrite(LED_PIN, LOW);
+        // digitalWrite(LED_PIN, LOW);
         Serial.println("OFF");
       }
     }
@@ -76,9 +92,11 @@ void loop() {
   // frase.clear();
 
   for (int palabras = random(5, 13); palabras > 0 && estado_boton[0] == 1; palabras--) {
-    digitalWrite(LED_PIN, HIGH);
+    // digitalWrite(LED_PIN, HIGH);
+    prender_progresivo();
     delay(random(250, 400));
-    digitalWrite(LED_PIN, LOW);
+    // digitalWrite(LED_PIN, LOW);
+    apagar_progresivo();
     delay(random(50, 150));
   }
   delay(random(400, 700));
