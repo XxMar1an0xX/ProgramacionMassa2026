@@ -3,7 +3,7 @@
 //TODO: Es mejor hacer un UPS exclusivo para el arduino asi no se apague aun si se corta la luz
 
 const int a0 = 2, b0 = 3, c0 = 4, d0 = 5, e0 = 6, f0 = 7, g0 = 8;        //DIGITO UNIDAD
-const int h1 = 9, b1 = 10, c1 = 11, d1 = 12, e1 = 13, f1 = A1, g1 = A0;  //DIGITO DECENA
+const int h1 = 9, b1 = 10, c1 = 11, d1 = 12, e1 = 13, f1 = A2, g1 = A0;  //DIGITO DECENA
 
 //NOTE: millis mide el tiempo en milisegundos, entonces un dia es 1000*60*60*24
 #define dia 86400000
@@ -16,7 +16,7 @@ unsigned long intervalo = dia;
 String stringcuenta;
 char charcuenta[3];
 byte chardecena, charunidad;
-int cuenta = 52;
+int cuenta = 11;
 unsigned long tiemporestante = 0;
 
 void setup() {
