@@ -4,7 +4,8 @@
 #include <BLE2902.h>
 #include <vector>
 
-#define LED_PIN 2
+
+#define LED_PIN 5
 
 #define SERVICE_UUID "12345678-1234-1234-1234-123456789abc"
 #define BUTTON_CHAR_UUID "12345678-1234-1234-1234-123456789abd"
