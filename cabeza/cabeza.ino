@@ -6,6 +6,7 @@
 
 
 #define LED_PIN 5
+#define BOTON_PIN 25
 
 #define SERVICE_UUID "12345678-1234-1234-1234-123456789abc"
 #define BUTTON_CHAR_UUID "12345678-1234-1234-1234-123456789abd"
@@ -21,14 +22,14 @@ struct Tiempos {
 
 
 void prender_progresivo() {
-  for (int brillo = 0; brillo < 255; brillo += 4) {
+  for (int brillo = 0; brillo < 255; brillo += 5) {
     analogWrite(LED_PIN, brillo);
     // delayMicroseconds(1);
   }
 }
 
 void apagar_progresivo() {
-  for (int brillo = 255; brillo > 0; brillo -= 4) {
+  for (int brillo = 255; brillo > 0; brillo -= 5) {
     analogWrite(LED_PIN, brillo);
     // delayMicroseconds(1);
   }
@@ -53,6 +54,7 @@ class ButtonCallback : public BLECharacteristicCallbacks {
 void setup() {
   Serial.begin(115200);
   pinMode(LED_PIN, OUTPUT);
+  pinMode(BOTON_PIN, INPUT_PULLUP);
 
   BLEDevice::init("Cabeza");
 
@@ -91,7 +93,7 @@ void loop() {
   // delay(random(400, 700));
   // frase.clear();
 
-  for (int palabras = random(5, 13); palabras > 0 && estado_boton[0] == 1; palabras--) {
+  for (int palabras = random(5, 13); palabras > 0 && (estado_boton[0] == 1 || digitalRead(BOTON_PIN)); palabras--) {
     // digitalWrite(LED_PIN, HIGH);
     prender_progresivo();
     delay(random(250, 400));

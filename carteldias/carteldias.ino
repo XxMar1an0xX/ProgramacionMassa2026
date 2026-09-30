@@ -9,14 +9,14 @@ const int h1 = 9, b1 = 10, c1 = 11, d1 = 12, e1 = 13, f1 = A2, g1 = A0;  //DIGIT
 #define dia 86400000
 
 //NOTE: esto es la hora al momento de prender el arduino
-#define horainicio 7
+#define horainicio 9
 
 unsigned long tiempoInicio;
 unsigned long intervalo = dia;
 String stringcuenta;
 char charcuenta[3];
 byte chardecena, charunidad;
-int cuenta = 11;
+int cuenta = 9;
 unsigned long tiemporestante = 0;
 
 void setup() {
@@ -40,10 +40,19 @@ void setup() {
   pinMode(A2, INPUT_PULLUP);  //BOTON
   //
   //NOTE: extraer digitos desde un int
-  stringcuenta = String(cuenta);
-  stringcuenta.toCharArray(charcuenta, 3);
-  chardecena = charcuenta[0] - '0';
-  charunidad = charcuenta[1] - '0';
+  // stringcuenta = String(cuenta);
+  // stringcuenta.toCharArray(charcuenta, 3);
+  // chardecena = charcuenta[0] - '0';
+  // charunidad = charcuenta[1] - '0';
+  chardecena = (cuenta / 10) % 10;
+  charunidad = cuenta % 10;
+
+  Serial.print("chars decena: ");
+  Serial.println(chardecena);
+  Serial.print("chars unidad: ");
+  Serial.println(charunidad);
+  chardecena = 0;
+  charunidad = 9;
   //
   decena8();  //para que muestre en el digito decena el numero 8, una vez activado
   unidad8();  //para que muestre en el digito unidad el numero 8, una vez activado
@@ -69,18 +78,14 @@ void loop() {
     cuenta = cuenta - 1;
     //NOTE: logica del cartel
     if (cuenta > 9) {
-      stringcuenta = String(cuenta);
-      stringcuenta.toCharArray(charcuenta, 3);
-      chardecena = charcuenta[0] - '0';
-      charunidad = charcuenta[1] - '0';
+      chardecena = (cuenta / 10) % 10;
+      charunidad = cuenta % 10;
       decena();
       unidad();
     }
     if (cuenta <= 9 && cuenta > 0) {
-      stringcuenta = String(cuenta);
-      stringcuenta.toCharArray(charcuenta, 3);
-      chardecena = 0;
-      charunidad = charcuenta[0] - '0';
+      chardecena = (cuenta / 10) % 10;
+      charunidad = cuenta % 10;
       unidad();
       decena();
     }
