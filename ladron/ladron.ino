@@ -1,5 +1,6 @@
 #include <ESPUI.h>
 #include <Preferences.h>
+#include <Adafruit_NeoPixel.h>
 
 const char* ssid = "hola";
 String contraseña;
@@ -84,6 +85,23 @@ void manejar_texto(Control* sender, int type) {
   }
 }
 
+void manejar_color(Control* sender, int type) {
+  Serial.println(sender->color);
+}
+
+void manejar_brillo(Control* sender, int type) {
+  Serial.println(sender->value);
+}
+
+void boton_respiracion(Control* sender, int type) {
+  Serial.println("respiracionaskdaskdjskdsaldas");
+}
+
+void boton_led_sin_efecto(Control* sender, int type) {
+  Serial.println("holakldasjdasjdasjldasjkljas");
+}
+
+
 void setup() {
   Serial.begin(115200);
   WiFi.mode(WIFI_AP);
@@ -97,7 +115,10 @@ void setup() {
   WiFi.softAP(ssid, contraseña.c_str());
   Serial.print("direccion ip: ");
   Serial.println(WiFi.softAPIP());
+  Serial.print("contraseña: ");
+  Serial.println(contraseña);
 
+  //NOTE: pestaña control principal
   auto pestaña_control = ESPUI.addControl(Tab, "", "Controles");
 
   // estado_giro = ESPUI.label("Estado de Giro", ControlColor::None, "Detenido");
@@ -111,6 +132,23 @@ void setup() {
   ESPUI.addControl(Button, "", "Cara 2", None, panel_caras, &boton_cara_2);
   ESPUI.addControl(Button, "", "Cara 3", None, panel_caras, &boton_cara_3);
 
+  //NOTE: pestaña de luces
+  auto pestaña_luces = ESPUI.addControl(Tab, "", "Luces");
+
+  ESPUI.addControl(Separator, "Leds respiracion", "", None, pestaña_luces);
+
+  auto color = ESPUI.addControl(ControlType::Text, "Color y brillo", "#000000", ControlColor::None, pestaña_luces, manejar_color);
+  ESPUI.setInputType(color, "color");
+  auto brillo = ESPUI.addControl(Slider, "Brillo", "50", Dark, color, manejar_brillo);
+  ESPUI.addControl(Max, "", "255", None, brillo);
+  ESPUI.addControl(Min, "", "0", None, brillo);
+
+  ESPUI.addControl(Button, "Respiracion", "Iniciar", ControlColor::Dark, pestaña_luces);
+
+  ESPUI.addControl(Separator, "Led sin efecto", "", None, pestaña_luces);
+  auto boton_led_noefecto = ESPUI.addControl(Button, "Leds sin efecto", "Prender/Apagar", ControlColor::Peterriver, pestaña_luces);
+
+  //NOTE: pestaña de contraseña
   auto pestaña_contraseña = ESPUI.addControl(Tab, "", "Contraseña");
 
   contraseña_status = ESPUI.addControl(Label, "Contraseña actual", contraseña.c_str(), Turquoise, pestaña_contraseña);
