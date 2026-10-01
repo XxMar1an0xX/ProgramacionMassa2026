@@ -9,7 +9,7 @@ const int h1 = 9, b1 = 10, c1 = 11, d1 = 12, e1 = 13, f1 = A2, g1 = A0;  //DIGIT
 #define dia 86400000
 
 //NOTE: esto es la hora al momento de prender el arduino
-#define horainicio 9
+#define horainicio 13
 
 unsigned long tiempoInicio;
 unsigned long intervalo = dia;
