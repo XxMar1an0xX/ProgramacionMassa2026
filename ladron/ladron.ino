@@ -2,6 +2,10 @@
 #include <Preferences.h>
 #include <Adafruit_NeoPixel.h>
 
+#define LED_RESPIRACION 18  //NOTE: cambiar
+#define NUMPIXELS 28 + 27 + 28 + 29 + 25
+
+#define asdasdas 1
 const char* ssid = "hola";
 String contraseña;
 
@@ -9,6 +13,10 @@ Preferences variables;
 
 uint16_t estado_giro;
 uint16_t contraseña_status;
+
+Adafruit_NeoPixel tira_respiracion(NUMPIXELS, LED_RESPIRACION, NEO_BRG + NEO_KHZ800);
+
+uint32_t color_tira = tira_respiracion.Color(0, 0, 0);
 
 void boton_empezar_giro(Control* sender, int type) {
   switch (type) {
@@ -86,19 +94,51 @@ void manejar_texto(Control* sender, int type) {
 }
 
 void manejar_color(Control* sender, int type) {
-  Serial.println(sender->color);
+  Serial.println(sender->value);
+  // Serial.print(hexStringToColor(sender->value));
+  color_tira = hexStringToColor(sender->value);
+  tira_respiracion.fill(color_tira, 0, NUMPIXELS);
+  // tira_respiracion.show();
 }
+
+uint32_t hexStringToColor(String hex) {
+  if (hex.startsWith("#")) {
+    hex.remove(0, 1);
+  }
+
+  //NOTE: nose que hace esta funcion
+  uint32_t value = strtoul(hex.c_str(), NULL, 16);
+
+  uint8_t r = (value >> 16) & 0xFF;
+  uint8_t g = (value >> 8) & 0xFF;
+  uint8_t b = value & 0xFF;
+
+  return tira_respiracion.Color(r, g, b);
+}
+
 
 void manejar_brillo(Control* sender, int type) {
   Serial.println(sender->value);
 }
 
 void boton_respiracion(Control* sender, int type) {
-  Serial.println("respiracionaskdaskdjskdsaldas");
+  // Serial.println("respiracionaskdaskdjskdsaldas");
+  for (short brillo = 0; brillo < 255; brillo++) {
+    tira_respiracion.setBrightness(brillo);
+    tira_respiracion.show();
+  }
+  delay(700);
+  for (short brillo = 255; brillo > 0; brillo--) {
+    tira_respiracion.setBrightness(brillo);
+    tira_respiracion.show();
+  }
 }
 
 void boton_led_sin_efecto(Control* sender, int type) {
   Serial.println("holakldasjdasjdasjldasjkljas");
+}
+
+void efecto_respiracion() {
 }
 
 
@@ -158,5 +198,10 @@ void setup() {
   ESPUI.addControl(Button, "", "Actualizar", Dark, panel_contraseña, &boton_contraseña);
 
   ESPUI.begin("Ladron Control");
+
+  tira_respiracion.begin();
+  tira_respiracion.show();
+  tira_respiracion.setPixelColor(NUMPIXELS, tira_respiracion.Color(255, 255, 255));
+  delay(100);
 }
 void loop() {}
