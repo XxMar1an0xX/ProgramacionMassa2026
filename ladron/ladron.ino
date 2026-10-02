@@ -16,8 +16,10 @@ uint16_t contraseña_status;
 
 Adafruit_NeoPixel tira_respiracion(NUMPIXELS, LED_RESPIRACION, NEO_BRG + NEO_KHZ800);
 
-uint32_t color_tira = tira_respiracion.Color(0, 0, 0);
-uint16_t brillo_tira = 1;
+uint32_t color_tira;
+String color_tira_hex;
+uint16_t brillo_tira;
+bool habilitar_respiracion = 0;
 
 void boton_empezar_giro(Control* sender, int type) {
   switch (type) {
@@ -97,11 +99,17 @@ void manejar_texto(Control* sender, int type) {
 void manejar_color(Control* sender, int type) {
   Serial.println(sender->value);
   // Serial.print(hexStringToColor(sender->value));
-  color_tira = hexStringToColor(sender->value);
-  for (short led; led < NUMPIXELS; led++) {
-    tira_respiracion.setPixelColor(led, color_tira);
-    tira_respiracion.show();
-  }
+  variables.begin("valores", false);
+  variables.putInt("color tira", hexStringToColor(sender->value));
+  color_tira = variables.getInt("color tira", tira_respiracion.Color(0, 0, 0));
+  variables.end();
+  // for (int led = 0; led < NUMPIXELS; led++) {
+  //   tira_respiracion.setPixelColor(led, color_tira);
+  // }
+  tira_respiracion.fill(color_tira);
+  tira_respiracion.show();
+  // ESPUI.updateSlider(brillo, int nValue)
+
   // tira_respiracion.fill(color_tira, 0, NUMPIXELS);
 }
 
@@ -123,8 +131,14 @@ uint32_t hexStringToColor(String hex) {
 
 void manejar_brillo(Control* sender, int type) {
   Serial.println(sender->value);
-  brillo_tira = sender->value.toInt();
-  tira_respiracion.fill(color_tira, 0, NUMPIXELS);
+
+  variables.begin("valores", false);
+  variables.putInt("brillo tira", sender->value.toInt());
+  variables.putString("color hex", sender->value);
+  color_tira_hex = variables.getString("color hex", "#FFFFFF");
+  brillo_tira = variables.getInt("brillo tira", 0);
+  variables.end();
+  tira_respiracion.fill(color_tira);
   tira_respiracion.setBrightness(brillo_tira);
   tira_respiracion.show();
 }
@@ -133,28 +147,7 @@ void boton_respiracion(Control* sender, int type) {
   switch (type) {
     case B_DOWN:
       Serial.println("respiracionaskdaskdjskdsaldas");
-      // for (int brillo = 0; brillo < 255; brillo++) {
-      //   delay(1);
-      //   tira_respiracion.setBrightness(brillo);
-      //   tira_respiracion.show();
-      // }
-      // delay(50);
-      for (int brillo = brillo_tira; brillo > 1; brillo--) {
-        delay(5);
-        Serial.print(brillo);
-        tira_respiracion.setBrightness(brillo);
-        tira_respiracion.show();
-      }
-      Serial.println(tira_respiracion.getBrightness());
-      // delay(10);
-      for (int brillo = 1; brillo < brillo_tira; brillo++) {
-        delay(5);
-        Serial.print(brillo);
-        tira_respiracion.setBrightness(brillo);
-        tira_respiracion.show();
-      }
-      Serial.println(tira_respiracion.getBrightness());
-      tira_respiracion.show();
+      habilitar_respiracion = (habilitar_respiracion + 1) % 2;
       break;
     case B_UP:
       break;
@@ -173,7 +166,10 @@ void setup() {
   variables.begin("valores", false);
   //NOTE: recomiendo cambiar la contraseña default puesta
   contraseña = variables.getString("contraseña", "contraseña");
-  variables.end();
+  brillo_tira = variables.getInt("brillo tira", 0);
+  color_tira = variables.getInt("color tira", tira_respiracion.Color(0, 0, 0));
+  color_tira_hex = variables.getString("color hex", "#FFFFFF");
+  // variables.end();
 
 
   WiFi.softAP(ssid, contraseña.c_str());
@@ -181,6 +177,11 @@ void setup() {
   Serial.println(WiFi.softAPIP());
   Serial.print("contraseña: ");
   Serial.println(contraseña);
+
+  tira_respiracion.begin();
+  tira_respiracion.fill(color_tira);
+  tira_respiracion.setBrightness(brillo_tira);
+  tira_respiracion.show();
 
   //NOTE: pestaña control principal
   auto pestaña_control = ESPUI.addControl(Tab, "", "Controles");
@@ -201,11 +202,11 @@ void setup() {
 
   ESPUI.addControl(Separator, "Leds respiracion", "", None, pestaña_luces);
 
-  auto color = ESPUI.addControl(ControlType::Text, "Color y brillo", "#000000", ControlColor::None, pestaña_luces, manejar_color);
-  ESPUI.setInputType(color, "color");
-  auto brillo = ESPUI.addControl(Slider, "Brillo", "50", Dark, color, manejar_brillo);
-  ESPUI.addControl(Max, "", "255", None, brillo);
-  ESPUI.addControl(Min, "", "1", None, brillo);
+  auto color_selector = ESPUI.addControl(ControlType::Text, "Color y brillo", variables.getString("color hex", "#FFFFFF"), ControlColor::None, pestaña_luces, manejar_color);
+  ESPUI.setInputType(color_selector, "color");
+  auto brillo_slider = ESPUI.addControl(Slider, "Brillo", String(variables.getInt("brillo tira", 0)), Dark, color_selector, manejar_brillo);
+  ESPUI.addControl(Max, "", "255", None, brillo_slider);
+  ESPUI.addControl(Min, "", "1", None, brillo_slider);
 
   ESPUI.addControl(Button, "Respiracion", "Iniciar", ControlColor::Dark, pestaña_luces, &boton_respiracion);
 
@@ -221,14 +222,34 @@ void setup() {
   ESPUI.addControl(Text, "", "", Alizarin, panel_contraseña, manejar_texto);
   ESPUI.addControl(Button, "", "Actualizar", Dark, panel_contraseña, &boton_contraseña);
 
+  variables.end();
   ESPUI.begin("Ladron Control");
 
-  tira_respiracion.fill(color_tira, 0, NUMPIXELS);
 
   Serial.println("tira andadndo");
   // delay(100);
+  ESPUI.updateText(color_selector, color_tira_hex);
+  // ESPUI.updateSlider(brillo_slider, brillo_tira);
 }
 void loop() {
+  if (habilitar_respiracion == 1) {
+    for (int brillo_loop = brillo_tira; brillo_loop > 2 && habilitar_respiracion == 1; brillo_loop--) {
+      Serial.println((255 / brillo_tira) * (255 / brillo_tira));
+      delay((255 / brillo_tira) * (255 / brillo_tira));
+      tira_respiracion.setBrightness(brillo_loop);
+      tira_respiracion.show();
+    }
+    Serial.println("entre loops");
+    // delay(10);
+    for (int brillo_loop = 2; brillo_loop < brillo_tira && habilitar_respiracion == 1; brillo_loop++) {
+      delay((255 / brillo_tira) * (255 / brillo_tira));
+      // Serial.println(brillo_loop);
+      tira_respiracion.setBrightness(brillo_loop);
+      tira_respiracion.show();
+    }
+    tira_respiracion.setBrightness(brillo_tira);
+    tira_respiracion.show();
+  }
   // tira_respiracion.show();
   // tira_respiracion.setPixelColor(NUMPIXELS, color_tira);
 }
