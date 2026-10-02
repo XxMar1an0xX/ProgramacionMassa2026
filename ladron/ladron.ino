@@ -2,10 +2,10 @@
 #include <Preferences.h>
 #include <Adafruit_NeoPixel.h>
 
-#define LED_RESPIRACION 18  //NOTE: cambiar
-#define NUMPIXELS 28 + 27 + 28 + 29 + 25
+#define LED_RESPIRACION 21  //NOTE: cambiar
+#define NUMPIXELS 137
 
-#define asdasdas 1
+
 const char* ssid = "hola";
 String contraseña;
 
@@ -17,6 +17,7 @@ uint16_t contraseña_status;
 Adafruit_NeoPixel tira_respiracion(NUMPIXELS, LED_RESPIRACION, NEO_BRG + NEO_KHZ800);
 
 uint32_t color_tira = tira_respiracion.Color(0, 0, 0);
+uint16_t brillo_tira = 1;
 
 void boton_empezar_giro(Control* sender, int type) {
   switch (type) {
@@ -97,8 +98,11 @@ void manejar_color(Control* sender, int type) {
   Serial.println(sender->value);
   // Serial.print(hexStringToColor(sender->value));
   color_tira = hexStringToColor(sender->value);
-  tira_respiracion.fill(color_tira, 0, NUMPIXELS);
-  // tira_respiracion.show();
+  for (short led; led < NUMPIXELS; led++) {
+    tira_respiracion.setPixelColor(led, color_tira);
+    tira_respiracion.show();
+  }
+  // tira_respiracion.fill(color_tira, 0, NUMPIXELS);
 }
 
 uint32_t hexStringToColor(String hex) {
@@ -119,26 +123,46 @@ uint32_t hexStringToColor(String hex) {
 
 void manejar_brillo(Control* sender, int type) {
   Serial.println(sender->value);
+  brillo_tira = sender->value.toInt();
+  tira_respiracion.fill(color_tira, 0, NUMPIXELS);
+  tira_respiracion.setBrightness(brillo_tira);
+  tira_respiracion.show();
 }
 
 void boton_respiracion(Control* sender, int type) {
-  // Serial.println("respiracionaskdaskdjskdsaldas");
-  for (short brillo = 0; brillo < 255; brillo++) {
-    tira_respiracion.setBrightness(brillo);
-    tira_respiracion.show();
-  }
-  delay(700);
-  for (short brillo = 255; brillo > 0; brillo--) {
-    tira_respiracion.setBrightness(brillo);
-    tira_respiracion.show();
+  switch (type) {
+    case B_DOWN:
+      Serial.println("respiracionaskdaskdjskdsaldas");
+      // for (int brillo = 0; brillo < 255; brillo++) {
+      //   delay(1);
+      //   tira_respiracion.setBrightness(brillo);
+      //   tira_respiracion.show();
+      // }
+      // delay(50);
+      for (int brillo = brillo_tira; brillo > 1; brillo--) {
+        delay(5);
+        Serial.print(brillo);
+        tira_respiracion.setBrightness(brillo);
+        tira_respiracion.show();
+      }
+      Serial.println(tira_respiracion.getBrightness());
+      // delay(10);
+      for (int brillo = 1; brillo < brillo_tira; brillo++) {
+        delay(5);
+        Serial.print(brillo);
+        tira_respiracion.setBrightness(brillo);
+        tira_respiracion.show();
+      }
+      Serial.println(tira_respiracion.getBrightness());
+      tira_respiracion.show();
+      break;
+    case B_UP:
+      break;
   }
 }
 
 void boton_led_sin_efecto(Control* sender, int type) {
   Serial.println("holakldasjdasjdasjldasjkljas");
-}
-
-void efecto_respiracion() {
 }
 
 
@@ -181,9 +205,9 @@ void setup() {
   ESPUI.setInputType(color, "color");
   auto brillo = ESPUI.addControl(Slider, "Brillo", "50", Dark, color, manejar_brillo);
   ESPUI.addControl(Max, "", "255", None, brillo);
-  ESPUI.addControl(Min, "", "0", None, brillo);
+  ESPUI.addControl(Min, "", "1", None, brillo);
 
-  ESPUI.addControl(Button, "Respiracion", "Iniciar", ControlColor::Dark, pestaña_luces);
+  ESPUI.addControl(Button, "Respiracion", "Iniciar", ControlColor::Dark, pestaña_luces, &boton_respiracion);
 
   ESPUI.addControl(Separator, "Led sin efecto", "", None, pestaña_luces);
   auto boton_led_noefecto = ESPUI.addControl(Button, "Leds sin efecto", "Prender/Apagar", ControlColor::Peterriver, pestaña_luces);
@@ -199,9 +223,12 @@ void setup() {
 
   ESPUI.begin("Ladron Control");
 
-  tira_respiracion.begin();
-  tira_respiracion.show();
-  tira_respiracion.setPixelColor(NUMPIXELS, tira_respiracion.Color(255, 255, 255));
-  delay(100);
+  tira_respiracion.fill(color_tira, 0, NUMPIXELS);
+
+  Serial.println("tira andadndo");
+  // delay(100);
 }
-void loop() {}
+void loop() {
+  // tira_respiracion.show();
+  // tira_respiracion.setPixelColor(NUMPIXELS, color_tira);
+}
