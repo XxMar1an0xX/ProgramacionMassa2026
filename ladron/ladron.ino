@@ -2,11 +2,16 @@
 #include <Preferences.h>
 #include <Adafruit_NeoPixel.h>
 
-#define LED_RESPIRACION 21  //NOTE: cambiar
-#define NUMPIXELS 137
+#define LED_RESPIRACION 21
+#define NUMPIXELS 237
+
+//TODO: cambiar estor pines a lo que son en realidad
+#define ENTRADA_SENSOR_EFECTOHALL 4
+#define MOTOR_SALIDA 25
+#define FRENO_SALIDA 26
 
 
-const char* ssid = "hola";
+const char* ssid = "ladron";
 String contraseña;
 
 Preferences variables;
@@ -20,15 +25,23 @@ uint32_t color_tira;
 String color_tira_hex;
 uint16_t brillo_tira;
 bool habilitar_respiracion = 0;
+short estado_cara = 0;
+short cara_seleccionada = 0;
+bool estado_sensor_hall = 0;
+bool girando = false;
 
 void boton_empezar_giro(Control* sender, int type) {
   switch (type) {
     case B_DOWN:
-      Serial.println("boton encendido");
+      Serial.println("girando...");
+      digitalWrite(FRENO_SALIDA, HIGH);
+      digitalWrite(MOTOR_SALIDA, HIGH);
       ESPUI.print(estado_giro, "Girando...");
+      girando = true;
+      cara_seleccionada = 120;
       break;
     case B_UP:
-      Serial.println("boton apagado");
+      // Serial.println("boton apagado");
       break;
   }
 }
@@ -38,6 +51,12 @@ void boton_cara_1(Control* sender, int type) {
     case B_DOWN:
       Serial.println("cara 1");
       ESPUI.print(estado_giro, "Detenido, cara 1");
+      cara_seleccionada = 0;
+      if (girando == false) {
+        digitalWrite(MOTOR_SALIDA, HIGH);
+        digitalWrite(FRENO_SALIDA, HIGH);
+        girando = true;
+      }
       break;
     case B_UP:
       Serial.println(".");
@@ -49,6 +68,12 @@ void boton_cara_2(Control* sender, int type) {
     case B_DOWN:
       Serial.println("Cara 2");
       ESPUI.print(estado_giro, "Detenido, cara 2");
+      cara_seleccionada = 1;
+      if (girando == false) {
+        digitalWrite(MOTOR_SALIDA, HIGH);
+        digitalWrite(FRENO_SALIDA, HIGH);
+        girando = true;
+      }
       break;
     case B_UP:
       Serial.println(".");
@@ -60,6 +85,12 @@ void boton_cara_3(Control* sender, int type) {
     case B_DOWN:
       Serial.println("Cara 3");
       ESPUI.print(estado_giro, "Detenido, cara 3");
+      cara_seleccionada = 2;
+      if (girando == false) {
+        digitalWrite(MOTOR_SALIDA, HIGH);
+        digitalWrite(FRENO_SALIDA, HIGH);
+        girando = true;
+      }
       break;
     case B_UP:
       Serial.println(".");
@@ -156,12 +187,28 @@ void boton_respiracion(Control* sender, int type) {
 
 void boton_led_sin_efecto(Control* sender, int type) {
   Serial.println("holakldasjdasjdasjldasjkljas");
+  switch (type) {
+    case B_DOWN:
+      Serial.println("frenando.......");
+      digitalWrite(MOTOR_SALIDA, LOW);
+      delay(50);
+      digitalWrite(FRENO_SALIDA, LOW);
+      girando = false;
+      // habilitar_respiracion = (habilitar_respiracion + 1) % 2;
+      break;
+    case B_UP:
+      break;
+  }
 }
 
 
 void setup() {
   Serial.begin(115200);
   WiFi.mode(WIFI_AP);
+
+  pinMode(MOTOR_SALIDA, OUTPUT);
+  pinMode(ENTRADA_SENSOR_EFECTOHALL, INPUT_PULLDOWN);
+  pinMode(FRENO_SALIDA, OUTPUT);
 
   variables.begin("valores", false);
   //NOTE: recomiendo cambiar la contraseña default puesta
@@ -188,7 +235,6 @@ void setup() {
 
   // estado_giro = ESPUI.label("Estado de Giro", ControlColor::None, "Detenido");
   estado_giro = ESPUI.addControl(ControlType::Label, "Estado de Giro", "Detenido", ControlColor::Wetasphalt, pestaña_control);
-
   // ESPUI.button("Empezar Giro", &boton_empezar_giro, ControlColor::Dark, "Press");
 
   ESPUI.addControl(Button, "Empezar Giro", "Girar", Dark, pestaña_control, &boton_empezar_giro);
@@ -208,7 +254,7 @@ void setup() {
   ESPUI.addControl(Max, "", "255", None, brillo_slider);
   ESPUI.addControl(Min, "", "1", None, brillo_slider);
 
-  ESPUI.addControl(Button, "Respiracion", "Iniciar", ControlColor::Dark, pestaña_luces, &boton_respiracion);
+  // ESPUI.addControl(Button, "Respiracion", "Iniciar", ControlColor::Dark, pestaña_luces, &boton_respiracion);
 
   ESPUI.addControl(Separator, "Led sin efecto", "", None, pestaña_luces);
   auto boton_led_noefecto = ESPUI.addControl(Button, "Leds sin efecto", "Prender/Apagar", ControlColor::Peterriver, pestaña_luces);
@@ -250,6 +296,29 @@ void loop() {
     tira_respiracion.setBrightness(brillo_tira);
     tira_respiracion.show();
   }
+
+  if (digitalRead(ENTRADA_SENSOR_EFECTOHALL) == LOW && estado_sensor_hall == HIGH) {
+
+    // estado_sensor_hall = ;
+    estado_cara = (estado_cara + 1) % 3;
+    Serial.print("cara actual: ");
+    Serial.println(estado_cara);
+    delay(50);
+  }
+  estado_sensor_hall = digitalRead(ENTRADA_SENSOR_EFECTOHALL);
+  // Serial.println(estado_sensor_hall);
+  // } else if (digitalRead(ENTRADA_SENSOR_EFECTOHALL) == false && estado_sensor_hall == false) {
+  //   estado_sensor_hall = true;
+  // }
+  if (cara_seleccionada == estado_cara && girando == true) {
+    Serial.println("frenando...");
+    digitalWrite(FRENO_SALIDA, LOW);
+    digitalWrite(MOTOR_SALIDA, LOW);
+    girando = false;
+  }
+  // Serial.print("estado input sensor hall: ");
+  // Serial.println(digitalRead(ENTRADA_SENSOR_EFECTOHALL));
+  // delay(10);
   // tira_respiracion.show();
   // tira_respiracion.setPixelColor(NUMPIXELS, color_tira);
 }
