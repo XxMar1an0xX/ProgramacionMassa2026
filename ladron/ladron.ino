@@ -1,14 +1,19 @@
 #include <ESPUI.h>
 #include <Preferences.h>
-#include <Adafruit_NeoPixel.h>
+// #include <Adafruit_NeoPixel.h>
+#include <FastLED.h>
 
 #define LED_RESPIRACION 21
+#define TIRA_CARA 19
 #define NUMPIXELS 237
+#define PIXELES_CARA 80
+// #define NUMPIXELS 23
 
 //TODO: cambiar estor pines a lo que son en realidad
-#define ENTRADA_SENSOR_EFECTOHALL 4
-#define MOTOR_SALIDA 25
-#define FRENO_SALIDA 26
+#define ENTRADA_SENSOR_EFECTOHALL 2
+#define SENSOR_HALL_ORIENTACION 4
+#define MOTOR_SALIDA 14
+#define FRENO_SALIDA 27
 
 
 const char* ssid = "ladron";
@@ -19,12 +24,13 @@ Preferences variables;
 uint16_t estado_giro;
 uint16_t contraseña_status;
 
-Adafruit_NeoPixel tira_respiracion(NUMPIXELS, LED_RESPIRACION, NEO_BRG + NEO_KHZ800);
+CRGB tira_cara[PIXELES_CARA];
+CRGB tira_efectos[NUMPIXELS];
 
-uint32_t color_tira;
 String color_tira_hex;
 uint16_t brillo_tira;
 bool habilitar_respiracion = 0;
+bool habilitar_efectodegiro = 0;
 short estado_cara = 0;
 short cara_seleccionada = 0;
 bool estado_sensor_hall = 0;
@@ -38,6 +44,7 @@ void boton_empezar_giro(Control* sender, int type) {
       digitalWrite(MOTOR_SALIDA, HIGH);
       ESPUI.print(estado_giro, "Girando...");
       girando = true;
+      habilitar_efectodegiro = (habilitar_efectodegiro + 1) % 2;
       cara_seleccionada = 120;
       break;
     case B_UP:
@@ -129,22 +136,16 @@ void manejar_texto(Control* sender, int type) {
 
 void manejar_color(Control* sender, int type) {
   Serial.println(sender->value);
-  // Serial.print(hexStringToColor(sender->value));
   variables.begin("valores", false);
-  variables.putInt("color tira", hexStringToColor(sender->value));
-  color_tira = variables.getInt("color tira", tira_respiracion.Color(0, 0, 0));
+  variables.putString("color hex", sender->value);
+  color_tira_hex = variables.getString("color hex", sender->value);
   variables.end();
-  // for (int led = 0; led < NUMPIXELS; led++) {
-  //   tira_respiracion.setPixelColor(led, color_tira);
-  // }
-  tira_respiracion.fill(color_tira);
-  tira_respiracion.show();
+  fill_solid(tira_efectos, NUMPIXELS, hexStringToColor(color_tira_hex));
+  FastLED.show();
   // ESPUI.updateSlider(brillo, int nValue)
-
-  // tira_respiracion.fill(color_tira, 0, NUMPIXELS);
 }
 
-uint32_t hexStringToColor(String hex) {
+CRGB hexStringToColor(String hex) {
   if (hex.startsWith("#")) {
     hex.remove(0, 1);
   }
@@ -156,7 +157,7 @@ uint32_t hexStringToColor(String hex) {
   uint8_t g = (value >> 8) & 0xFF;
   uint8_t b = value & 0xFF;
 
-  return tira_respiracion.Color(r, g, b);
+  return CRGB(r, g, b);
 }
 
 
@@ -165,13 +166,13 @@ void manejar_brillo(Control* sender, int type) {
 
   variables.begin("valores", false);
   variables.putInt("brillo tira", sender->value.toInt());
-  variables.putString("color hex", sender->value);
-  color_tira_hex = variables.getString("color hex", "#FFFFFF");
+  // variables.putString("color hex", sender->value);
+  // color_tira_hex = variables.getString("color hex", "#FFFFFF");
   brillo_tira = variables.getInt("brillo tira", 0);
   variables.end();
-  tira_respiracion.fill(color_tira);
-  tira_respiracion.setBrightness(brillo_tira);
-  tira_respiracion.show();
+  fill_solid(tira_efectos, NUMPIXELS, hexStringToColor(color_tira_hex));
+  FastLED.setBrightness(brillo_tira);
+  FastLED.show();
 }
 
 void boton_respiracion(Control* sender, int type) {
@@ -190,8 +191,8 @@ void boton_led_sin_efecto(Control* sender, int type) {
   switch (type) {
     case B_DOWN:
       Serial.println("frenando.......");
-      digitalWrite(MOTOR_SALIDA, LOW);
       delay(50);
+      digitalWrite(MOTOR_SALIDA, LOW);
       digitalWrite(FRENO_SALIDA, LOW);
       girando = false;
       // habilitar_respiracion = (habilitar_respiracion + 1) % 2;
@@ -208,15 +209,14 @@ void setup() {
 
   pinMode(MOTOR_SALIDA, OUTPUT);
   pinMode(ENTRADA_SENSOR_EFECTOHALL, INPUT_PULLDOWN);
+  pinMode(SENSOR_HALL_ORIENTACION, INPUT_PULLDOWN);
   pinMode(FRENO_SALIDA, OUTPUT);
 
   variables.begin("valores", false);
   //NOTE: recomiendo cambiar la contraseña default puesta
   contraseña = variables.getString("contraseña", "contraseña");
   brillo_tira = variables.getInt("brillo tira", 0);
-  color_tira = variables.getInt("color tira", tira_respiracion.Color(0, 0, 0));
   color_tira_hex = variables.getString("color hex", "#FFFFFF");
-  // variables.end();
 
 
   WiFi.softAP(ssid, contraseña.c_str());
@@ -225,10 +225,11 @@ void setup() {
   Serial.print("contraseña: ");
   Serial.println(contraseña);
 
-  tira_respiracion.begin();
-  tira_respiracion.fill(color_tira);
-  tira_respiracion.setBrightness(brillo_tira);
-  tira_respiracion.show();
+  FastLED.addLeds<WS2811, LED_RESPIRACION, BRG>(tira_efectos, NUMPIXELS);
+  FastLED.addLeds<WS2811, TIRA_CARA, BRG>(tira_cara, PIXELES_CARA);
+
+  Serial.print("hex al inicio: ");
+  Serial.println(color_tira_hex);
 
   //NOTE: pestaña control principal
   auto pestaña_control = ESPUI.addControl(Tab, "", "Controles");
@@ -248,16 +249,16 @@ void setup() {
 
   ESPUI.addControl(Separator, "Leds respiracion", "", None, pestaña_luces);
 
-  auto color_selector = ESPUI.addControl(ControlType::Text, "Color y brillo", variables.getString("color hex", "#FFFFFF"), ControlColor::None, pestaña_luces, manejar_color);
+  auto color_selector = ESPUI.addControl(ControlType::Text, "Color y brillo", color_tira_hex.c_str(), ControlColor::None, pestaña_luces, manejar_color);
   ESPUI.setInputType(color_selector, "color");
   auto brillo_slider = ESPUI.addControl(Slider, "Brillo", String(variables.getInt("brillo tira", 0)), Dark, color_selector, manejar_brillo);
   ESPUI.addControl(Max, "", "255", None, brillo_slider);
   ESPUI.addControl(Min, "", "1", None, brillo_slider);
 
-  // ESPUI.addControl(Button, "Respiracion", "Iniciar", ControlColor::Dark, pestaña_luces, &boton_respiracion);
+  ESPUI.addControl(Button, "Respiracion", "Iniciar", ControlColor::Dark, pestaña_luces, &boton_respiracion);
 
   ESPUI.addControl(Separator, "Led sin efecto", "", None, pestaña_luces);
-  auto boton_led_noefecto = ESPUI.addControl(Button, "Leds sin efecto", "Prender/Apagar", ControlColor::Peterriver, pestaña_luces);
+  auto boton_led_noefecto = ESPUI.addControl(Button, "Leds sin efecto", "Prender/Apagar", ControlColor::Peterriver, pestaña_luces, &boton_led_sin_efecto);
 
   //NOTE: pestaña de contraseña
   auto pestaña_contraseña = ESPUI.addControl(Tab, "", "Contraseña");
@@ -273,52 +274,76 @@ void setup() {
 
 
   Serial.println("tira andadndo");
-  // delay(100);
-  ESPUI.updateText(color_selector, color_tira_hex);
-  // ESPUI.updateSlider(brillo_slider, brillo_tira);
+  fill_solid(tira_efectos, NUMPIXELS, hexStringToColor(color_tira_hex));
+  FastLED.show();
 }
 void loop() {
+  // digitalWrite(MOTOR_SALIDA, HIGH);
+  // digitalWrite(FRENO_SALIDA, HIGH);
+
   if (habilitar_respiracion == 1) {
-    for (int brillo_loop = brillo_tira; brillo_loop > 2 && habilitar_respiracion == 1; brillo_loop--) {
-      Serial.println((255 / brillo_tira) * (255 / brillo_tira));
-      delay((255 / brillo_tira) * (255 / brillo_tira));
-      tira_respiracion.setBrightness(brillo_loop);
-      tira_respiracion.show();
+    for (short brillo_loop = brillo_tira; brillo_loop > 1 && habilitar_respiracion == 1; brillo_loop--) {
+      delay(5);
+      fill_solid(tira_efectos, NUMPIXELS, hexStringToColor(color_tira_hex));
+      nscale8_video(tira_efectos, NUMPIXELS, brillo_loop);
+      FastLED.show();
     }
     Serial.println("entre loops");
-    // delay(10);
-    for (int brillo_loop = 2; brillo_loop < brillo_tira && habilitar_respiracion == 1; brillo_loop++) {
-      delay((255 / brillo_tira) * (255 / brillo_tira));
-      // Serial.println(brillo_loop);
-      tira_respiracion.setBrightness(brillo_loop);
-      tira_respiracion.show();
+    for (short brillo_loop = 1; brillo_loop < brillo_tira && habilitar_respiracion == 1; brillo_loop++) {
+      delay(5);
+      fill_solid(tira_efectos, NUMPIXELS, hexStringToColor(color_tira_hex));
+      nscale8_video(tira_efectos, NUMPIXELS, brillo_loop);
+      FastLED.show();
     }
-    tira_respiracion.setBrightness(brillo_tira);
-    tira_respiracion.show();
   }
+
+  // if (habilitar_efectodegiro == 1) {
+  //
+  //   for (short delays = 200; delays > 20 && habilitar_efectodegiro == 1; delays = delays - random(1, 10)) {
+  //     FastLED.delay(delays);
+  //     fill_solid(tira_efectos, NUMPIXELS, CRGB(random(0, 255), random(0, 255), random(0, 255)));
+  //     FastLED.delay(delays);
+  //     fill_solid(tira_efectos, NUMPIXELS, CRGB(random(0, 255), random(0, 255), random(0, 255)));
+  //     FastLED.delay(delays);
+  //     fill_solid(tira_efectos, NUMPIXELS, CRGB(random(0, 255), random(0, 255), random(0, 255)));
+  //   }
+  // }
 
   if (digitalRead(ENTRADA_SENSOR_EFECTOHALL) == LOW && estado_sensor_hall == HIGH) {
 
-    // estado_sensor_hall = ;
     estado_cara = (estado_cara + 1) % 3;
+    switch (estado_cara) {
+      case 1:
+        fill_solid(tira_cara, PIXELES_CARA, CRGB(0, 200, 0));
+        break;
+      case 2:
+        fill_solid(tira_cara, PIXELES_CARA, CRGB(0, 0, 200));
+        break;
+      case 3:
+        fill_solid(tira_cara, PIXELES_CARA, CRGB(200, 0, 0));
+        break;
+    }
     Serial.print("cara actual: ");
     Serial.println(estado_cara);
     delay(50);
   }
-  estado_sensor_hall = digitalRead(ENTRADA_SENSOR_EFECTOHALL);
-  // Serial.println(estado_sensor_hall);
-  // } else if (digitalRead(ENTRADA_SENSOR_EFECTOHALL) == false && estado_sensor_hall == false) {
-  //   estado_sensor_hall = true;
-  // }
-  if (cara_seleccionada == estado_cara && girando == true) {
-    Serial.println("frenando...");
-    digitalWrite(FRENO_SALIDA, LOW);
-    digitalWrite(MOTOR_SALIDA, LOW);
-    girando = false;
+  EVERY_N_MILLISECONDS(500) {
+    Serial.println(digitalRead(MOTOR_SALIDA));
+    Serial.println(digitalRead(FRENO_SALIDA));
+    Serial.print("condicional: ");
+    ;
+    Serial.println(girando);
   }
-  // Serial.print("estado input sensor hall: ");
-  // Serial.println(digitalRead(ENTRADA_SENSOR_EFECTOHALL));
-  // delay(10);
-  // tira_respiracion.show();
-  // tira_respiracion.setPixelColor(NUMPIXELS, color_tira);
+  estado_sensor_hall = digitalRead(ENTRADA_SENSOR_EFECTOHALL);
+  // if (cara_seleccionada == estado_cara && girando == true) {
+  //   Serial.println("frenando...");
+  //   digitalWrite(FRENO_SALIDA, LOW);
+  //   digitalWrite(MOTOR_SALIDA, LOW);
+  //   girando = false;
+  // }
+  if (girando == true) {
+    // Serial.println(girando);
+    digitalWrite(MOTOR_SALIDA, HIGH);
+    digitalWrite(FRENO_SALIDA, HIGH);
+  }
 }
