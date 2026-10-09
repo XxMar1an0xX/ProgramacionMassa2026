@@ -16,8 +16,9 @@ unsigned long intervalo = dia;
 String stringcuenta;
 char charcuenta[3];
 byte chardecena, charunidad;
-int cuenta = 9;
+int cuenta = 1;
 unsigned long tiemporestante = 0;
+int timeout = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -52,7 +53,7 @@ void setup() {
   Serial.print("chars unidad: ");
   Serial.println(charunidad);
   chardecena = 0;
-  charunidad = 9;
+  charunidad = 1;
   //
   decena8();  //para que muestre en el digito decena el numero 8, una vez activado
   unidad8();  //para que muestre en el digito unidad el numero 8, una vez activado
@@ -63,51 +64,13 @@ void setup() {
   Serial.println(millis());
   Serial.println(tiempoInicio);
   //NOTE: el primer intervalo debe estar desfasado asi cambia el dia a las 12
-  intervalo = (dia / 24 * (24 - horainicio));
+  // intervalo = (dia / 24 * (24 - horainicio));
+  intervalo = 300000;
 }
 
 void loop() {
-  decena();
-  unidad();
-  delay(100);
-  Serial.println(millis());
-  Serial.println(tiempoInicio + intervalo);
-  if (millis() >= intervalo + tiempoInicio) {
-    intervalo = dia;
-    tiempoInicio = millis();
-    cuenta = cuenta - 1;
-    //NOTE: logica del cartel
-    if (cuenta > 9) {
-      chardecena = (cuenta / 10) % 10;
-      charunidad = cuenta % 10;
-      decena();
-      unidad();
-    }
-    if (cuenta <= 9 && cuenta > 0) {
-      chardecena = (cuenta / 10) % 10;
-      charunidad = cuenta % 10;
-      unidad();
-      decena();
-    }
-    while (cuenta <= 0) {
-      chardecena = 0;
-      charunidad = 0;
-      decena();
-      unidad();
-      delay(500);
-      decenaoff();
-      unidadoff();
-      delay(500);
-    }
-  }
-  //NOTE: esto es en caso de overflow, pues millis() hace overflow (vuelve a 0) a los ~49 dias desde que empieza a andar
-  if (millis() <= 499) {
-    tiempoInicio = millis();
-    intervalo = tiemporestante;
-    delay(500);
-  } else {
-    tiemporestante = (intervalo + tiempoInicio) - millis();
-  }
+  decena0();
+  unidad0();
 }
 
 //NOTE: ACA TERMINA EL CODIGO BASE, LO DEMAS ES EL SWITCHING PARA MOSTRAR EL NUMERO DE DECENA Y UNIDAD
