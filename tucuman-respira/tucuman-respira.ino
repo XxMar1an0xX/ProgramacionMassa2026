@@ -12,7 +12,10 @@ void setup() {
 void loop() {
   while (Serial2.available() > 0) {
     gps.encode(Serial2.read());
+    // Serial.write(Serial2.read());
   }
+  // delay(500);
+  // Serial.println(gps.read)
   // Serial.print("Latitud: ");
   // Serial.println(gps.location.lat(), 6);
   // Serial.print("Longitud: ");
@@ -32,5 +35,9 @@ void loop() {
     } else {
       Serial.println("Waiting");
     }
+    Serial.print("asdasdasd: ");
+    Serial.println(gps.time.value());
   }
+  // delay(500);
+  // Serial.println(gps.satellites.value());
 }
