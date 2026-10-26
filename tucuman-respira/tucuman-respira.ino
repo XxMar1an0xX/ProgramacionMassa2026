@@ -1,4 +1,22 @@
 #include <TinyGPSPlus.h>
+#include <ArduinoIoTCloud.h>
+#include <Arduino_ConnectionHandler.h>
+
+const char DEVICE_LOGIN_NAME[] = "44805e5e-0849-4cb8-a3dd-413a9df57c15";
+
+const char SSID[] = "Armor 24";                         // Network SSID (name)
+const char PASS[] = "hola1111";                         // Network password (use for WPA, or use as key for WEP)
+const char DEVICE_KEY[] = "RvY729qzdIG1wlMv1OGvyfEbx";  // Secret device password
+
+
+void initProperties() {
+
+  ArduinoCloud.setBoardId(DEVICE_LOGIN_NAME);
+  // ArduinoCloud.setSecretDeviceKey(DEVICE_KEY);
+}
+
+WiFiConnectionHandler ArduinoIoTPreferredConnection(SSID, PASS);
+
 TinyGPSPlus gps;
 
 #define GPSRX 16
@@ -7,6 +25,13 @@ void setup() {
   Serial.begin(115200);
   Serial2.begin(9600, SERIAL_8N1, GPSRX, GPSTX);
   Serial.println("ya pasamos el inico");
+  initProperties();
+
+  // Connect to Arduino IoT Cloud
+  ArduinoCloud.begin(ArduinoIoTPreferredConnection);
+
+  setDebugMessageLevel(2);
+  ArduinoCloud.printDebugInfo();
 }
 
 void loop() {
@@ -40,4 +65,6 @@ void loop() {
   }
   // delay(500);
   // Serial.println(gps.satellites.value());
+  //
+  ArduinoCloud.update();
 }
