@@ -4,10 +4,11 @@
 
 const char DEVICE_LOGIN_NAME[] = "44805e5e-0849-4cb8-a3dd-413a9df57c15";
 
-const char SSID[] = "Personal-422";                     // Network SSID (name)
-const char PASS[] = "vGx3UsFaT2";                       // Network password (use for WPA, or use as key for WEP)
+const char SSID[] = "Armor 24";                         // Network SSID (name)
+const char PASS[] = "hola1111";                         // Network password (use for WPA, or use as key for WEP)
 const char DEVICE_KEY[] = "RvY729qzdIG1wlMv1OGvyfEbx";  // Secret device password
 
+// bool estado_led = true;
 
 void initProperties() {
 
@@ -25,13 +26,14 @@ void setup() {
   Serial.begin(115200);
   Serial2.begin(9600, SERIAL_8N1, GPSRX, GPSTX);
   Serial.println("ya pasamos el inico");
+  pinMode(2, OUTPUT);
   initProperties();
-
   // Connect to Arduino IoT Cloud
   ArduinoCloud.begin(ArduinoIoTPreferredConnection);
 
   setDebugMessageLevel(2);
-  ArduinoCloud.printDebugInfo();
+  ArduinoCloud.addProperty(estado_led, READWRITE, ON_CHANGE, onEstadoLedChange);
+  bugInfo();
 }
 
 void loop() {
@@ -39,6 +41,9 @@ void loop() {
     gps.encode(Serial2.read());
     // Serial.write(Serial2.read());
   }
+
+
+
   // delay(500);
   // Serial.println(gps.read)
   // Serial.print("Latitud: ");
@@ -61,10 +66,14 @@ void loop() {
       Serial.println("Waiting");
     }
     Serial.print("asdasdasd: ");
-    Serial.println(gps.time.value());
+
+    // delay(500);
+    // Serial.println(gps.satellites.value());
+    //
   }
-  // delay(500);
-  // Serial.println(gps.satellites.value());
-  //
   ArduinoCloud.update();
+}
+
+void onLedChange() {
+  digitalWrite(2, led ? HIGH : LOW);
 }
