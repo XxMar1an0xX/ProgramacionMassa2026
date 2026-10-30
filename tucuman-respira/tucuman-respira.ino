@@ -7,31 +7,6 @@
 #include <Adafruit_BME280.h>
 #include <Preferences.h>
 
-//NOTE: arduino cloud
-const char DEVICE_LOGIN_NAME[] = "44805e5e-0849-4cb8-a3dd-413a9df57c15";
-const char SSID[] = "Armor 24";                         // Network SSID (name)
-const char PASS[] = "hola1111";                         // Network password (use for WPA, or use as key for WEP)
-const char DEVICE_KEY[] = "RvY729qzdIG1wlMv1OGvyfEbx";  // Secret device password
-//
-bool estado_led;
-int valor_variable;
-
-WiFiConnectionHandler ArduinoIoTPreferredConnection(SSID, PASS);
-void onEstadoLedChange();
-void actualizar_int();
-void ArduinoInit() {
-  ArduinoCloud.setBoardId(DEVICE_LOGIN_NAME);
-  ArduinoCloud.setSecretDeviceKey(DEVICE_KEY);
-  ArduinoCloud.begin(ArduinoIoTPreferredConnection);
-  setDebugMessageLevel(2);
-  ArduinoCloud.addProperty(estado_led, READWRITE, ON_CHANGE, onEstadoLedChange);
-  ArduinoCloud.addProperty(valor_variable, READWRITE, ON_CHANGE, actualizar_int);
-}
-
-//NOTE: Sensor GPS localizacion
-TinyGPSPlus gps;
-#define GPSRX 16
-#define GPSTX 17
 
 // void setup() {
 //   Serial.begin(115200);
@@ -107,10 +82,10 @@ TinyGPSPlus gps;
 */
 
 #include <Wire.h>
-#include <SoftwareSerial.h>
-#include <EEPROM.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BME280.h>
+// #include <SoftwareSerial.h>
+// #include <EEPROM.h>
+// #include <Adafruit_Sensor.h>
+// #include <Adafruit_BME280.h>
 
 // ============================================================
 //  PINES
@@ -189,32 +164,7 @@ uint16_t palabra(const byte *b, byte i) {
   return ((uint16_t)b[i] << 8) | b[i + 1];
 }
 
-void calibrarCero() {
-  if (millis() < CALENTAMIENTO) {
-    Serial.println(F("Esperar el calentamiento del sensor (30 s)."));
-    return;
-  }
-  Serial.println(F("Calibrando cero (aire limpio / filtrado)... 60 muestras"));
-  float suma = 0;
-  byte n = 0;
-  Datos d;
-  unsigned long inicio = millis();
-  while (n < 60) {
-    if (millis() - inicio > 120000UL) {
-      Serial.println(F("\nTimeout: no llegan datos del sensor."));
-      return;
-    }
-    if (leerTrama(d)) {
-      suma += d.pm25;
-      n++;
-      Serial.print('.');
-    }
-  }
-  offsetPM25 = suma / n;
-  EEPROM.put(EE_OFFSET, offsetPM25);
-  Serial.print(F("\nOffset PM2.5 = "));
-  Serial.println(offsetPM25);
-}
+// Lee una trama de 32 bytes, valida cabecera y checksum. Devuelve true si es válida.
 bool leerTrama(Datos &d) {
   static byte buf[32];
   while (pms.available() >= 32) {
@@ -249,6 +199,32 @@ float aplicarCalibracion(uint16_t crudo) {
   return v < 0 ? 0 : v;
 }
 
+void calibrarCero() {
+  if (millis() < CALENTAMIENTO) {
+    Serial.println(F("Esperar el calentamiento del sensor (30 s)."));
+    return;
+  }
+  Serial.println(F("Calibrando cero (aire limpio / filtrado)... 60 muestras"));
+  float suma = 0;
+  byte n = 0;
+  Datos d;
+  unsigned long inicio = millis();
+  while (n < 60) {
+    if (millis() - inicio > 120000UL) {
+      Serial.println(F("\nTimeout: no llegan datos del sensor."));
+      return;
+    }
+    if (leerTrama(d)) {
+      suma += d.pm25;
+      n++;
+      Serial.print('.');
+    }
+  }
+  offsetPM25 = suma / n;
+  EEPROM.put(EE_OFFSET, offsetPM25);
+  Serial.print(F("\nOffset PM2.5 = "));
+  Serial.println(offsetPM25);
+}
 
 void calibrarGanancia(float ref) {
   if (millis() < CALENTAMIENTO) {
@@ -275,7 +251,7 @@ void calibrarGanancia(float ref) {
     Serial.println(F("Lectura muy baja: no se puede calcular la ganancia."));
     return;
   }
-  gananciaPM25 = ref / pr;
+  gananciaPM25 = ref / prom;
   EEPROM.put(EE_GANANCIA, gananciaPM25);
   Serial.print(F("Ganancia PM2.5 = "));
   Serial.println(gananciaPM25, 3);
@@ -421,9 +397,9 @@ void actualizarUV() {
   uvIndice = (uvV - V_CERO) / V_POR_INDICE;
   if (uvIndice < 0) uvIndice = 0;
 }
- 
+
 const __FlashStringHelper *nivelUV(float v) {
-  if (v < V_MODERADO) ret F("BAJO");
+  if (v < V_MODERADO) return F("BAJO");
   if (v < V_ALTO) return F("MODERADO");
   if (v < V_MUY_ALTO) return F("ALTO");
   if (v < V_EXTREMO) return F("MUY ALTO");
@@ -453,7 +429,7 @@ float calcularPPM(float rs) {
   if (ppm > 2000) ppm = 2000;
   return ppm;
 }
- 
+
 void calibrarCO() {
   Serial.println(F(">> Calibrando MQ-7 en aire limpio... no acerques gases ni humo."));
   float suma = 0;
@@ -549,9 +525,9 @@ void mostrarTodo() {
   if (bmeOK) {
     Serial.print(F("Temperatura:  "));
     Serial.print(temperatura, 2);
-    Serial.println(F(" °C"))
+    Serial.println(F(" °C"));
 
-      Serial.print(F("Humedad:      "));
+    Serial.print(F("Humedad:      "));
     Serial.print(humedad, 2);
     Serial.println(F(" %RH"));
     Serial.print(F("Presion:      "));
@@ -609,6 +585,33 @@ void mostrarTodo() {
 }
 
 //NOTE: arduino cloud
+const char DEVICE_LOGIN_NAME[] = "44805e5e-0849-4cb8-a3dd-413a9df57c15";
+//NOTE: aqui cambiar ssid por el nombre de la red wifi
+//y pass es la contraseña
+const char SSID[] = "Armor 24";                         // Network SSID (name)
+const char PASS[] = "hola1111";                         // Network password (use for WPA, or use as key for WEP)
+const char DEVICE_KEY[] = "RvY729qzdIG1wlMv1OGvyfEbx";  // Secret device password
+//
+bool estado_led;
+int valor_variable;
+
+WiFiConnectionHandler ArduinoIoTPreferredConnection(SSID, PASS);
+void onEstadoLedChange();
+void actualizar_int();
+void ArduinoInit() {
+  ArduinoCloud.setBoardId(DEVICE_LOGIN_NAME);
+  ArduinoCloud.setSecretDeviceKey(DEVICE_KEY);
+  ArduinoCloud.begin(ArduinoIoTPreferredConnection);
+  setDebugMessageLevel(2);
+  //NOTE: aqui añadir en addproperty cada variable resultante de un sensor
+  ArduinoCloud.addProperty(estado_led, READWRITE, ON_CHANGE, onEstadoLedChange);
+  ArduinoCloud.addProperty(valor_variable, READWRITE, ON_CHANGE, actualizar_int);
+}
+
+//NOTE: Sensor GPS localizacion
+TinyGPSPlus gps;
+#define GPSRX 16
+#define GPSTX 17
 void onEstadoLedChange() {
   digitalWrite(2, estado_led ? HIGH : LOW);
 }
