@@ -564,13 +564,13 @@ void mostrarTodo() {
 //NOTE: arduino cloud
 //
 //NOTE: identificador del dispositivo
-const char DEVICE_LOGIN_NAME[] = "44805e5e-0849-4cb8-a3dd-413a9df57c15";
+const char DEVICE_LOGIN_NAME[] = "b6fffc59-5a38-4ac0-9847-38db7e8e0463";
 //NOTE: aqui cambiar ssid por el nombre de la red wifi
 //y pass es la contraseña
 const char SSID[] = "Armor 24";                         // Network SSID (name)
 const char PASS[] = "hola1111";                         // Network password (use for WPA, or use as key for WEP)
 //NOTE: Contraseña secreta para arduino cloud
-const char DEVICE_KEY[] = "RvY729qzdIG1wlMv1OGvyfEbx";  // Secret device password
+const char DEVICE_KEY[] = "TDrGcNhSX9wyBQ12lxEwHi9M8";  // Secret device password
 //
 bool estado_led;
 int valor_variable;
