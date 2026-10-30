@@ -7,51 +7,19 @@
 #include <Adafruit_BME280.h>
 #include <Preferences.h>
 
+//NOTE: credenciales:
+//Protonmail (la cuenta de mail es de protonmail):
+//>Usuario: tucumanrespira@proton.me
+//>Contraseña: massa2026
+//Arduino Cloud:
+//>Usuario: tucumanrespira@proton.me
+//>contraseña: Massa2026$
 
-// void setup() {
-//   Serial.begin(115200);
-//   Serial2.begin(9600, SERIAL_8N1, GPSRX, GPSTX);
-//   Serial.println("ya pasamos el inico");
-//   pinMode(2, OUTPUT);
-//   ArduinoInit();
-//   // Connect to Arduino IoT Cloud
-// }
-//
-// void loop() {
-//
-//   //NOTE: Sensor GPS
-//   while (Serial2.available() > 0) {
-//     gps.encode(Serial2.read());
-//   }
-//
-//   if (gps.location.isUpdated() && gps.location.isValid()) {
-//
-//     Serial.print("Latitude: ");
-//     Serial.println(gps.location.lat(), 6);
-//
-//     Serial.print("Longitude: ");
-//     Serial.println(gps.location.lng(), 6);
-//
-//     Serial.print("Altitude: ");
-//     if (gps.altitude.isValid()) {
-//       Serial.print(gps.altitude.meters());
-//       Serial.println(" m");
-//     } else {
-//       Serial.println("Waiting");
-//     }
-//     Serial.print("asdasdasd: ");
-//   }
-//
-//
-//   //NOTE: Arduino
-//   ArduinoCloud.update();
-// }
-// void onEstadoLedChange() {
-//   digitalWrite(2, estado_led ? HIGH : LOW);
-// }
-// void actualizar_int() {
-//   Serial.println(valor_variable);
-// }
+//NOTE: Lo que falta es:
+//1- Cambiar EEPROM por Preferences (ejemplos en codigo q hice)
+//2- Reacomodar pines para un esp32
+//3- Sincronizar las variables resultantes de sensores a arduino cloud
+//4- un poquito de logica con un dashboard
 
 
 
@@ -86,6 +54,10 @@
 // #include <EEPROM.h>
 // #include <Adafruit_Sensor.h>
 // #include <Adafruit_BME280.h>
+
+
+//NOTE: Preferences (reemplazo de EEPROM)
+Preferences memoria;
 
 // ============================================================
 //  PINES
@@ -221,7 +193,12 @@ void calibrarCero() {
     }
   }
   offsetPM25 = suma / n;
-  EEPROM.put(EE_OFFSET, offsetPM25);
+
+  //NOTE: ejemplo para cambiar de EEPROM a prefenreces
+  memoria.begin("Memoria", false);
+  memoria.putFloat("offsetPM25", offsetPM25);
+  memoria.end();
+  // EEPROM.put(EE_OFFSET, offsetPM25);
   Serial.print(F("\nOffset PM2.5 = "));
   Serial.println(offsetPM25);
 }
@@ -375,34 +352,34 @@ int leerCO2() {
 // ============================================================
 //  UV
 // ============================================================
-float leerTensionUV() {
+float leerTensionUV()
+{
   unsigned long sumaUV = 0, sumaRef = 0;
-  for (int i = 0; i < CANTIDAD_LECTURAS; i++) {
-    sumaUV += analogRead(PIN_UV);
+  for (int i = 0; i < CANTIDAD_LECTURAS; i++)
+  {
+    sumaUV  += analogRead(PIN_UV);
     sumaRef += analogRead(PIN_UV_REF);
   }
   if (sumaRef == 0) return 0.0;
   return VCC_SENSOR * (float)sumaUV / (float)sumaRef;
 }
 
-void actualizarUV() {
+void actualizarUV()
+{
   float v = leerTensionUV();
-  if (uvPrimera) {
-    uvV = v;
-    uvPrimera = false;
-  } else {
-    uvV = uvV + FILTRO * (v - uvV);
-  }
+  if (uvPrimera) { uvV = v; uvPrimera = false; }
+  else           { uvV = uvV + FILTRO * (v - uvV); }
 
   uvIndice = (uvV - V_CERO) / V_POR_INDICE;
   if (uvIndice < 0) uvIndice = 0;
 }
 
-const __FlashStringHelper *nivelUV(float v) {
+const __FlashStringHelper* nivelUV(float v)
+{
   if (v < V_MODERADO) return F("BAJO");
-  if (v < V_ALTO) return F("MODERADO");
+  if (v < V_ALTO)     return F("MODERADO");
   if (v < V_MUY_ALTO) return F("ALTO");
-  if (v < V_EXTREMO) return F("MUY ALTO");
+  if (v < V_EXTREMO)  return F("MUY ALTO");
   return F("EXTREMO");
 }
 
@@ -585,11 +562,14 @@ void mostrarTodo() {
 }
 
 //NOTE: arduino cloud
+//
+//NOTE: identificador del dispositivo
 const char DEVICE_LOGIN_NAME[] = "44805e5e-0849-4cb8-a3dd-413a9df57c15";
 //NOTE: aqui cambiar ssid por el nombre de la red wifi
 //y pass es la contraseña
 const char SSID[] = "Armor 24";                         // Network SSID (name)
 const char PASS[] = "hola1111";                         // Network password (use for WPA, or use as key for WEP)
+//NOTE: Contraseña secreta para arduino cloud
 const char DEVICE_KEY[] = "RvY729qzdIG1wlMv1OGvyfEbx";  // Secret device password
 //
 bool estado_led;
@@ -643,6 +623,11 @@ void setup() {
 
   // Recuperar calibración guardada
   EEPROM.get(EE_OFFSET, offsetPM25);
+
+  //NOTE: ejemplo con preferences
+  memoria.begin("Memoria", false);
+  memoria.getFloat("offsetPM25", 0.0);
+  memoria.end();
   EEPROM.get(EE_GANANCIA, gananciaPM25);
   if (isnan(offsetPM25) || isnan(gananciaPM25) || gananciaPM25 <= 0) {
     offsetPM25 = 0;  // EEPROM virgen o datos inválidos: valores por defecto
